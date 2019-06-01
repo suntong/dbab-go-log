@@ -1,0 +1,29 @@
+{
+    "package": {
+        "name": "dbab-go",
+        "repo": "bin",
+        "subject": "suntong",
+        "desc": "Pixel Server dbab-svr in Go",
+        "website_url": "https://github.com/suntong/dbab-go",
+        "issue_tracker_url": "https://github.com/suntong/dbab-go/issues",
+        "vcs_url": "https://github.com/suntong/dbab-go.git",
+        "licenses": ["MIT"],
+        "public_download_numbers": false
+    },
+
+    "version": {
+        "name": "$VERSION",
+        "desc": "Release $VERSION",
+        "released": "$DATE",
+        "gpgSign": false
+    },
+
+    "files": [{
+	"includePattern": "out/(.*)", "uploadPattern": "$VERSION/$1",
+        "matrixParams": {
+            "override": 1
+        }
+    }],
+
+    "publish": true
+}

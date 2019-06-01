@@ -1,0 +1,46 @@
+# -*- yaml -*-
+
+language: go
+
+env:
+  global:
+    # Package setup (Ref: http://pkg-go.alioth.debian.org/packaging.html)
+    - VERSION="${TRAVIS_TAG:=0.0~git$(date +%Y%m%d)-1}"
+    - PKG_NAME="dbab-go"
+    - PKG_URL="https://github.com/suntong/dbab-go"
+    - PKG_CAT=utils
+    - PKG_ARCH=amd64
+    - PKG_DESC="Pixel Server dbab-svr in Go"
+    - PKG_VEND="suntong"
+    - PKG_MAINT='Tong Sun <suntong@cpan.org>'
+    - PKG_LICNS="MIT"
+    # Build time setup
+    - TZ=America/Toronto
+    - DATE_BUILD=`date -I`
+
+script:
+
+  - date
+  - echo $DATE_BUILD $VERSION
+  - echo
+
+  - go get -t -v ./...
+  - go build -v -ldflags="-X main.date=$DATE_BUILD"
+  - dbab-go
+  - go test -v ./...
+
+  - go get github.com/mitchellh/gox
+  - gox -ldflags="-X main.date=$DATE_BUILD" -osarch="linux/386 linux/amd64 darwin/amd64 windows/amd64" -output="out/{{.Dir}}-{{.OS}}-{{.Arch}}"
+# linux/386 linux/amd64 linux/arm darwin/amd64 darwin/386 windows/amd64 windows/386
+# e.g.: out/dbab-go-linux-amd64
+
+  - sed -i -e "s/\$VERSION/$VERSION/" bintray-bin.json
+  - sed -i -e "s/\$DATE/$DATE_BUILD/" bintray-bin.json
+
+deploy:
+  - provider: bintray
+    user: suntong
+    key: ${BINTRAY_API_KEY}
+    file: bintray-bin.json
+    skip_cleanup: true
+
