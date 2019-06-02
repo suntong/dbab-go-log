@@ -24,9 +24,11 @@ script:
   - echo $DATE_BUILD $VERSION
   - echo
 
+  - pwd
+  - cd dbab-svr
   - go get -t -v ./...
   - go build -v -ldflags="-X main.date=$DATE_BUILD"
-  - dbab-go
+  - ./dbab-svr
   - go test -v ./...
 
   - go get github.com/mitchellh/gox
@@ -34,6 +36,7 @@ script:
 # linux/386 linux/amd64 linux/arm darwin/amd64 darwin/386 windows/amd64 windows/386
 # e.g.: out/dbab-go-linux-amd64
 
+  - cd ../
   - sed -i -e "s/\$VERSION/$VERSION/" bintray-bin.json
   - sed -i -e "s/\$DATE/$DATE_BUILD/" bintray-bin.json
 

@@ -1,6 +1,6 @@
 {
     "package": {
-        "name": "dbab-go",
+        "name": "dbab-svr",
         "repo": "bin",
         "subject": "suntong",
         "desc": "Pixel Server dbab-svr in Go",
@@ -19,7 +19,7 @@
     },
 
     "files": [{
-	"includePattern": "out/(.*)", "uploadPattern": "$VERSION/$1",
+	"includePattern": "dbab-svr/out/(.*)", "uploadPattern": "$VERSION/$1",
         "matrixParams": {
             "override": 1
         }
