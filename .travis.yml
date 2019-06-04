@@ -28,10 +28,6 @@ script:
   - cd dbab-svr
   - go get -t -v ./...
   - go build -v -ldflags="-X main.date=$DATE_BUILD"
-  - mkdir -p /etc/dbab/
-  - echo ":80" > /etc/dbab/dbab.addr
-  - echo localhost > /etc/dbab/dbab.proxy
-  - ./dbab-svr
   - go test -v ./...
 
   - go get github.com/mitchellh/gox

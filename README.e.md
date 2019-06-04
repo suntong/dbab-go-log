@@ -15,11 +15,11 @@
 # Download binaries
 
 - The latest binary executables are available under  
-https://github.com/suntong/{{.Name}}/releases  
+https://bintray.com/suntong/bin/dbab-svr  
 as the result of the Continuous-Integration process.
 - I.e., they are built right from the source code during every git tagging commit automatically by [travis-ci](https://travis-ci.org/).
-- Pick & choose the binary executable that suits your OS and its architecture. E.g., for Linux, it would most probably be the `{{.Name}}_linux_VER_amd64` file. If your OS and its architecture is not available in the download list, please let me know and I'll add it.
-- You may want to rename it to a shorter name instead, e.g., `{{.Name}}`, after downloading it. 
+- Pick & choose the binary executable that suits your OS and its architecture. E.g., for Linux, it would most probably be the `dbab-svr_linux_VER_amd64` file. If your OS and its architecture is not available in the download list, please let me know and I'll add it.
+- You may want to rename it to a shorter name instead, e.g., `dbab-svr`, after downloading it. 
 
 
 # Debian package
