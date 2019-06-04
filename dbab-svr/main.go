@@ -93,7 +93,8 @@ func main() {
 	http.HandleFunc("/proxy.pac", autoProxy)
 	http.HandleFunc("/wpad.dat", autoProxy)
 
-	log.Printf("Starting dbab pixel server on port %s\n", httpPort)
+	log.Printf("starting dbab pixel server on port %s\n", httpPort)
 	// Run the web server.
-	log.Fatal(http.ListenAndServe(httpPort, nil))
+	log.Print(http.ListenAndServe(httpPort, nil))
+	log.Fatal("dbab pixel server stopped.")
 }
