@@ -25,16 +25,15 @@ const (
 	pixel = "\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\xFF\xFF\xFF\x00\x00\x00\x21\xF9\x04\x01\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B"
 )
 
-// type proxyHandler struct {
-// 	setting string
-// }
+type proxyHandler struct {
+	setting string
+}
 
 ////////////////////////////////////////////////////////////////////////////
 // Global variables definitions
 
 var (
-	progname     = "dbab-svr"
-	proxySetting = ""
+	progname = "dbab-svr"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -48,12 +47,10 @@ func pixelServ(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(pixel))
 }
 
-//func (h *proxyHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-func autoProxy(w http.ResponseWriter, r *http.Request) {
+func (h *proxyHandler) handle(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "close")
 	w.Header().Set("Content-Type", "application/octet-stream")
-	//w.Write([]byte(h.setting))
-	w.Write([]byte(proxySetting))
+	w.Write([]byte(h.setting))
 }
 
 //==========================================================================
@@ -84,14 +81,13 @@ func main() {
 		httpPort = _httpPort
 
 	}
-	//autoProxy := &proxyHandler{
-	proxySetting = fmt.Sprintf(
+	autoProxy := &proxyHandler{fmt.Sprintf(
 		"function FindProxyForURL(url, host) { return \"PROXY %s:3128; DIRECT\"; }",
-		readFile(proxyFile))
+		readFile(proxyFile))}
 
 	http.HandleFunc("/", pixelServ)
-	http.HandleFunc("/proxy.pac", autoProxy)
-	http.HandleFunc("/wpad.dat", autoProxy)
+	http.HandleFunc("/proxy.pac", autoProxy.handle)
+	http.HandleFunc("/wpad.dat", autoProxy.handle)
 
 	log.Printf("starting dbab pixel server on port %s\n", httpPort)
 	// Run the web server.
