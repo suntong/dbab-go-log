@@ -7,12 +7,15 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
+	"net"
 	"os"
+	"regexp"
 	"strings"
+	"time"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -25,10 +28,6 @@ const (
 	pixel = "\x47\x49\x46\x38\x39\x61\x01\x00\x01\x00\x80\x00\x00\xFF\xFF\xFF\x00\x00\x00\x21\xF9\x04\x01\x00\x00\x00\x00\x2C\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02\x44\x01\x00\x3B"
 )
 
-type proxyHandler struct {
-	setting string
-}
-
 ////////////////////////////////////////////////////////////////////////////
 // Global variables definitions
 
@@ -38,20 +37,6 @@ var (
 
 ////////////////////////////////////////////////////////////////////////////
 // Function definitions
-
-func pixelServ(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("ETag", "dbab")
-	w.Header().Set("Connection", "close")
-	w.Header().Set("Content-Type", "image/gif")
-	w.Header().Set("Cache-Control", "public, max-age=31536000")
-	w.Write([]byte(pixel))
-}
-
-func (h *proxyHandler) handle(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Connection", "close")
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write([]byte(h.setting))
-}
 
 //==========================================================================
 // support functions
@@ -81,16 +66,62 @@ func main() {
 		httpPort = _httpPort
 
 	}
-	autoProxy := &proxyHandler{fmt.Sprintf(
+	autoProxy := fmt.Sprintf(
 		"function FindProxyForURL(url, host) { return \"PROXY %s:3128; DIRECT\"; }",
-		readFile(proxyFile))}
-
-	http.HandleFunc("/", pixelServ)
-	http.HandleFunc("/proxy.pac", autoProxy.handle)
-	http.HandleFunc("/wpad.dat", autoProxy.handle)
+		readFile(proxyFile))
 
 	log.Printf("starting dbab pixel server on port %s\n", httpPort)
-	// Run the web server.
-	log.Print(http.ListenAndServe(httpPort, nil))
+	l, err := net.Listen("tcp", httpPort)
+	if err != nil {
+		log.Fatal(err)
+	}
+	re := regexp.MustCompile(`\s*(\w+)\s*([^\s]+)\s*HTTP\/(\d.\d)`)
+	for {
+		c, err := l.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := c.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+			log.Fatal(err)
+		}
+		s := bufio.NewScanner(c)
+		var req struct {
+			Method  string
+			URL     string
+			Version string
+		}
+		for s.Scan() {
+			line := s.Text()
+			matches := re.FindStringSubmatch(line)
+			if matches != nil {
+				req.Method = strings.ToUpper(matches[1])
+				req.URL = matches[2]
+				req.Version = matches[3]
+				continue
+			}
+			if line == "" {
+				break
+			}
+		}
+		if err := s.Err(); err != nil {
+			continue
+		}
+		if req.Method == "GET" && (req.URL == "/proxy.pac" || req.URL == "/wpad.dat") {
+			fmt.Fprintf(c, "HTTP/1.0 200 OK\r\n")
+			fmt.Fprintf(c, "Connection: close\r\n")
+			fmt.Fprintf(c, "Content-Type: application/octet-stream\r\n\r\n")
+			c.Write([]byte(autoProxy))
+		} else {
+			fmt.Fprintf(c, "HTTP/1.0 200 OK\r\n")
+			fmt.Fprintf(c, "ETag: dbab\r\n")
+			fmt.Fprintf(c, "Connection: close\r\n")
+			fmt.Fprintf(c, "Cache-Control: public, max-age=31536000\r\n")
+			fmt.Fprintf(c, "Content-type: image/gif\r\n")
+			fmt.Fprintf(c, "Content-length: 43\r\n\r\n")
+			c.Write([]byte(pixel))
+		}
+		c.Close()
+	}
+	l.Close()
 	log.Fatal("dbab pixel server stopped.")
 }
