@@ -13,6 +13,8 @@ import (
 	"net/http"
 	"os"
 	"strings"
+
+	"github.com/labstack/echo"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -81,16 +83,33 @@ func main() {
 		httpPort = _httpPort
 
 	}
-	autoProxy := &proxyHandler{fmt.Sprintf(
+	autoProxy := fmt.Sprintf(
 		"function FindProxyForURL(url, host) { return \"PROXY %s:3128; DIRECT\"; }",
-		readFile(proxyFile))}
+		readFile(proxyFile))
+	autoProxyBuf := []byte(autoProxy)
 
-	http.HandleFunc("/", pixelServ)
-	http.HandleFunc("/proxy.pac", autoProxy.handle)
-	http.HandleFunc("/wpad.dat", autoProxy.handle)
+	e := echo.New()
+
+	serveAutoProxy := func(c echo.Context) error {
+		response := c.Response()
+		response.Header().Add("Connection", "close")
+		return c.Blob(http.StatusOK, "application/octet-stream", autoProxyBuf)
+	}
+	e.GET("/proxy.pac", serveAutoProxy)
+	e.GET("/wpad.dat", serveAutoProxy)
+
+	pixelBuf := []byte(pixel)
+	servePixel := func(c echo.Context) error {
+		response := c.Response()
+		response.Header().Add("Cache-Control", "public, max-age=31536000")
+		response.Header().Add("Connection", "close")
+		response.Header().Add("ETag", "dbab")
+		return c.Blob(http.StatusOK, "image/gif", pixelBuf)
+	}
+	e.GET("*", servePixel)
 
 	log.Printf("starting dbab pixel server on port %s\n", httpPort)
-	// Run the web server.
-	log.Print(http.ListenAndServe(httpPort, nil))
+	// Start server
+	e.Logger.Print(e.Start(httpPort))
 	log.Fatal("dbab pixel server stopped.")
 }
