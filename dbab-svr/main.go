@@ -13,7 +13,6 @@ import (
 	"log"
 	"net"
 	"os"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -75,7 +74,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	re := regexp.MustCompile(`\s*(\w+)\s*([^\s]+)\s*HTTP\/(\d.\d)`)
 	for {
 		c, err := l.Accept()
 		if err != nil {
@@ -92,11 +90,11 @@ func main() {
 		}
 		for s.Scan() {
 			line := s.Text()
-			matches := re.FindStringSubmatch(line)
-			if matches != nil {
-				req.Method = strings.ToUpper(matches[1])
-				req.URL = matches[2]
-				req.Version = matches[3]
+			if strings.Contains(line, "HTTP") {
+				parts := strings.Split(line, " ")
+				req.Method = strings.ToUpper(strings.TrimSpace(parts[0]))
+				req.URL = strings.ToUpper(strings.TrimSpace(parts[1]))
+				req.Version = strings.ToUpper(strings.TrimSpace(parts[2]))
 				continue
 			}
 			if line == "" {
