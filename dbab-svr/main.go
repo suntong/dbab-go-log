@@ -14,7 +14,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/labstack/echo"
+	echo "github.com/labstack/echo/v4"
 )
 
 ////////////////////////////////////////////////////////////////////////////
