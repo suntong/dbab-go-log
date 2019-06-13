@@ -10,9 +10,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
 	"strings"
+
+	"github.com/valyala/fasthttp"
 )
 
 ////////////////////////////////////////////////////////////////////////////
@@ -39,18 +40,18 @@ var (
 ////////////////////////////////////////////////////////////////////////////
 // Function definitions
 
-func pixelServ(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("ETag", "dbab")
-	w.Header().Set("Connection", "close")
-	w.Header().Set("Content-Type", "image/gif")
-	w.Header().Set("Cache-Control", "public, max-age=31536000")
-	w.Write([]byte(pixel))
+func pixelServ(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("ETag", "dbab")
+	ctx.Response.Header.Set("Connection", "close")
+	ctx.Response.Header.Set("Content-Type", "image/gif")
+	ctx.Response.Header.Set("Cache-Control", "public, max-age=31536000")
+	fmt.Fprintf(ctx, "%s", pixel)
 }
 
-func (h *proxyHandler) handle(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Connection", "close")
-	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write([]byte(h.setting))
+func (h *proxyHandler) handler(ctx *fasthttp.RequestCtx) {
+	ctx.Response.Header.Set("Connection", "close")
+	ctx.Response.Header.Set("Content-Type", "application/octet-stream")
+	fmt.Fprintf(ctx, "%s", h.setting)
 }
 
 //==========================================================================
@@ -85,12 +86,16 @@ func main() {
 		"function FindProxyForURL(url, host) { return \"PROXY %s:3128; DIRECT\"; }",
 		readFile(proxyFile))}
 
-	http.HandleFunc("/", pixelServ)
-	http.HandleFunc("/proxy.pac", autoProxy.handle)
-	http.HandleFunc("/wpad.dat", autoProxy.handle)
-
+	m := func(ctx *fasthttp.RequestCtx) {
+		switch string(ctx.Path()) {
+		case "/proxy.pac", "/wpad.dat":
+			autoProxy.handler(ctx)
+		default:
+			pixelServ(ctx)
+		}
+	}
 	log.Printf("starting dbab pixel server on port %s\n", httpPort)
 	// Run the web server.
-	log.Print(http.ListenAndServe(httpPort, nil))
+	log.Print(fasthttp.ListenAndServe(httpPort, m))
 	log.Fatal("dbab pixel server stopped.")
 }
